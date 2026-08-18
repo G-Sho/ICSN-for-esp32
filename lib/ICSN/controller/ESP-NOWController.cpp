@@ -215,13 +215,13 @@ bool ESP_NOWController::registerConfiguredEspNowPeers() {
 }
 
 bool ESP_NOWController::sendSensorData(const char* contentName, const char* content,
-                                       uint8_t hopCount) {
+                                       uint8_t hopLimit) {
   if (contentName == nullptr || content == nullptr) {
     return false;
   }
 
   ESP_NOWControlData sensorData = {};
-  sensorData.hopCount = hopCount;
+  sensorData.hopCount = hopLimit;
   strncpy(sensorData.signalCode, "DATA", MAX_SIGNAL_CODE_LENGTH - 1);
   sensorData.signalCode[MAX_SIGNAL_CODE_LENGTH - 1] = '\0';
   strncpy(sensorData.contentName, contentName, MAX_CONTENT_NAME_LENGTH - 1);
@@ -234,7 +234,7 @@ bool ESP_NOWController::sendSensorData(const char* contentName, const char* cont
 }
 
 bool ESP_NOWController::sendInterest(const char* contentName, const uint8_t* targetMac,
-                                     uint8_t hopCount) {
+                                     uint8_t hopLimit) {
   if (contentName == nullptr || targetMac == nullptr) {
     return false;
   }
@@ -244,7 +244,7 @@ bool ESP_NOWController::sendInterest(const char* contentName, const uint8_t* tar
 
   strncpy(interest.signalCode, "INTEREST", MAX_SIGNAL_CODE_LENGTH - 1);
   interest.signalCode[MAX_SIGNAL_CODE_LENGTH - 1] = '\0';
-  interest.hopCount = hopCount;
+  interest.hopCount = hopLimit;
   strncpy(interest.contentName, contentName, MAX_CONTENT_NAME_LENGTH - 1);
   interest.contentName[MAX_CONTENT_NAME_LENGTH - 1] = '\0';
   strncpy(interest.content, "N/A", MAX_CONTENT_LENGTH - 1);

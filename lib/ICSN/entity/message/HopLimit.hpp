@@ -1,15 +1,12 @@
 #pragma once
 
-class HopCount {
+class HopLimit {
 private:
   int cnt;
 
 public:
-  HopCount(int cnt) : cnt(cnt) {}
+  HopLimit(int cnt) : cnt(cnt) {}
   int getValue() const {
     return cnt;
-  };
-  void increment() {
-    cnt++;
   };
 };

@@ -5,7 +5,7 @@
 #include "message/Content.hpp"
 #include "message/ContentName.hpp"
 #include "message/DestinationId.hpp"
-#include "message/HopCount.hpp"
+#include "message/HopLimit.hpp"
 #include "message/SenderId.hpp"
 #include "message/SignalCode.hpp"
 
@@ -21,20 +21,20 @@ UseCaseInteractor::UseCaseInteractor(IForwardingInformationBase& fibRepository,
 OutputData UseCaseInteractor::handleInterestReceive(const InputData& inputData) {
   SenderId senderId(inputData.senderId);
   DestinationId destinationId({inputData.destId});
-  HopCount hopcount(inputData.hopCount);
+  HopLimit hopLimit(inputData.hopLimit);
   ContentName contentName(inputData.contentName);
   Content content(inputData.content);
 
   // INTEREST受信時の処理
   // ホップカウントチェック（転送時の値で判定）
-  if (hopcount.getValue() + 1 >= systemConfig.hopCountThreshold) {
-    LOG_DEBUGF("[DEBUG][UC] interest_dropped reason=hop_limit name=%s hop=%d limit=%d\n",
-               contentName.getValue().c_str(), hopcount.getValue() + 1,
-               systemConfig.hopCountThreshold);
-    // パケット破棄
-    return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID), hopcount.getValue() + 1,
-                      VALUE_NA, VALUE_NA);
+  if (hopLimit.getValue() == 0) {
+    LOG_DEBUGF("[DEBUG][UC] interest_dropped reason=hop_limit name=%s\n",
+               contentName.getValue().c_str());
+
+    return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID), 0, VALUE_NA, VALUE_NA);
   }
+
+  const uint8_t nextHopLimit = hopLimit.getValue() - 1;
 
   if (csRepository.find(contentName)) {
     LOG_DEBUGF("[DEBUG][UC] interest_cs_hit name=%s\n", contentName.getValue().c_str());
@@ -55,27 +55,26 @@ OutputData UseCaseInteractor::handleInterestReceive(const InputData& inputData) 
     if (fibRepository.find(contentName)) {
       const DestinationId nextHops = fibRepository.get(contentName);
       LOG_DEBUGF("[DEBUG][UC] interest_forward name=%s hop=%d next_hops=%u\n",
-                 contentName.getValue().c_str(), hopcount.getValue() + 1,
+                 contentName.getValue().c_str(), hopLimit.getValue(),
                  static_cast<unsigned int>(nextHops.getValue().size()));
       // FIBテーブルに基づいてINTEREST送信 (転送なのでホップ数+1)
-      return makeOutput(*destinationId.getValue().begin(), nextHops.getValue(),
-                        toString(SignalCode::INTEREST), hopcount.getValue() + 1,
-                        contentName.getValue(), content.getValue());
+      return makeOutput(VALUE_NA, destinationId.getValue(), toString(SignalCode::INTEREST),
+                        nextHopLimit, contentName.getValue(), VALUE_NA);
+
     } else {
       LOG_DEBUGF("[DEBUG][UC] interest_dropped reason=fib_miss name=%s\n",
                  contentName.getValue().c_str());
-      // FIB未ヒット時はブロードキャストせず破棄
-      return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID),
-                        hopcount.getValue() + 1, VALUE_NA, VALUE_NA);
+
+      return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID), nextHopLimit, VALUE_NA,
+                        VALUE_NA);
     }
   }
-};
-
+}
 /// @brief Dataパケットを受信したときの処理
 /// @param inputData 入力された Data データ構造
 /// @return 応答パケット（DATA, INVALID）
 OutputData UseCaseInteractor::handleDataReceive(const InputData& inputData) {
-  HopCount hopcount(inputData.hopCount);
+  HopLimit hopLimit(inputData.hopLimit);
   ContentName contentName(inputData.contentName);
   Content content(inputData.content);
 
@@ -97,12 +96,12 @@ OutputData UseCaseInteractor::handleDataReceive(const InputData& inputData) {
 
     // PITに基づいてデータ送信 (転送なのでホップ数+1)
     return makeOutput(origin, requesters.getValue(), toString(SignalCode::DATA),
-                      hopcount.getValue() + 1, contentName.getValue(), content.getValue());
+                      hopLimit.getValue(), contentName.getValue(), content.getValue());
   } else {
     LOG_DEBUGF("[DEBUG][UC] data_dropped reason=pit_miss name=%s\n",
                contentName.getValue().c_str());
     // パケット破棄 (対応するINTERESTがない)
-    return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID), hopcount.getValue() + 1,
+    return makeOutput(VALUE_NA, {VALUE_NA}, toString(SignalCode::INVALID), hopLimit.getValue() + 1,
                       VALUE_NA, VALUE_NA);
   }
 };

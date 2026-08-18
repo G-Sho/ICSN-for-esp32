@@ -33,7 +33,7 @@ constexpr size_t MAX_FIB_INIT_ENTRIES = 10;
 
 struct SystemConfig {
   int maxVirtualDepth = 5;
-  int hopCountThreshold = 10;
+  int defaultInterestHopLimit = 10;
 
   // ESP-NOW CCMP 設定
   bool espNowEncryptionEnabled = false;

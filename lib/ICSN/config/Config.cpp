@@ -172,7 +172,7 @@ bool loadSystemConfig(const char* path) {
   }
 
   systemConfig.maxVirtualDepth = doc["MAX_VIRTUAL_DEPTH"] | 5;
-  systemConfig.hopCountThreshold = doc["HOP_COUNT_THRESHOLD"] | 10;
+  systemConfig.defaultInterestHopLimit = doc["default_interest_hop_limit"] | 10;
 
   resetSecurityConfig();
   if (doc.containsKey("esp_now_security") || doc.containsKey("icsn_security")) {
@@ -209,7 +209,7 @@ bool loadSystemConfig(const char* path) {
   LOG_INFOF(
       "[INFO][CFG] config_loaded path=%s max_virtual_depth=%d hop_limit=%d fib_init_entries=%u\n",
       path != nullptr ? path : "(null)", systemConfig.maxVirtualDepth,
-      systemConfig.hopCountThreshold, static_cast<unsigned int>(systemConfig.fibInitCount));
+      systemConfig.defaultInterestHopLimit, static_cast<unsigned int>(systemConfig.fibInitCount));
 
   return true;
 }
