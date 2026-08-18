@@ -83,6 +83,8 @@ OutputData UseCaseInteractor::handleDataReceive(const InputData& inputData) {
   if (pitRepository.find(contentName)) {
     const DestinationId requesters = pitRepository.get(contentName);
 
+    pitRepository.remove(contentName);
+
     // CSにキャッシュ
     CSPair csPair(contentName, content);
     csRepository.save(csPair);
